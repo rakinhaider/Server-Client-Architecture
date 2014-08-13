@@ -5,6 +5,7 @@ import javax.swing.JPanel;
 import java.awt.BorderLayout;
 
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -13,24 +14,31 @@ import javax.swing.border.LineBorder;
 import java.awt.Panel;
 import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
+
+import Server.Configurations;
+
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
 public class ClientFrame extends JFrame {
-	Socket socket;
+	private Socket socket;
 	private JTextField tfFilePath;
 	private JTextField tfFolderPath;
 	private JFileChooser fileChooser;
 	private JFileChooser folderChooser;
+	private Configurations configurations;
+	private JLabel lblWarning;
 
 	public ClientFrame(final Socket socket) {
 		getContentPane().setLayout(null);
@@ -38,8 +46,10 @@ public class ClientFrame extends JFrame {
 		this.socket = socket;
 
 		fileChooser = new JFileChooser();
+		fileChooser.setMultiSelectionEnabled(true);
 		folderChooser = new JFileChooser();
 		folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		folderChooser.setMultiSelectionEnabled(true);
 
 		JPanel panel = new JPanel();
 		panel.setName("Client");
@@ -56,7 +66,7 @@ public class ClientFrame extends JFrame {
 		tfFilePath = new JTextField();
 		tfFilePath.setBounds(10, 41, 239, 20);
 		tfFilePath
-				.setText("E:\\Android Workplace\\Server-Client Architecture\\src\\Client\\ClientFrame.java");
+				.setText("E:\\Android Workplace\\Server-Client-Architecture\\src\\Client\\ClientFrame.java");
 		panel.add(tfFilePath);
 		tfFilePath.setColumns(10);
 
@@ -74,7 +84,57 @@ public class ClientFrame extends JFrame {
 				try {
 
 					// System.out.println(bufStream.available());
-					transmitFile(path);
+
+					OutputStream os = socket.getOutputStream();
+
+					DataOutputStream dos = new DataOutputStream(os);
+					dos.writeUTF("ConfigurationRequest");
+
+					DataInputStream dis = new DataInputStream(socket
+							.getInputStream());
+
+					while (dis.available() == 0) {
+					}
+
+					configurations = new Configurations();
+
+					int length = dis.readInt();
+					String[] extensions = new String[length];
+					for (int i = 0; i < length; i++) {
+						extensions[i] = dis.readUTF();
+					}
+					configurations.setExtensions(extensions);
+					configurations.setNumberOfFiles(dis.readInt());
+					configurations.setMaximumSize(dis.readLong());
+					configurations.setMinId(dis.readLong());
+					configurations.setMaxId(dis.readLong());
+					configurations.setFolderAllowed(dis.readBoolean());
+
+					System.out.println(configurations.toString());
+
+					File file = new File(path);
+
+					if (configurations.isValidExtension(file.getName())
+							&& configurations.isValidSize(file.length())) {
+						dos.writeUTF("Valid");
+
+						transmitFile(path);
+
+						JOptionPane.showMessageDialog(null,
+								"Successfully Transfered.");
+					} else {
+						dos.writeUTF("Invalid");
+						String msg = "";
+						if (configurations.isValidExtension(file.getName())) {
+							msg.concat("Invalid Extension!!!!");
+						}
+						if (configurations.isValidSize(file.length())) {
+							msg.concat("Very Large File!!!!");
+						}
+
+						JOptionPane.showMessageDialog(null, msg);
+
+					}
 
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
@@ -94,7 +154,7 @@ public class ClientFrame extends JFrame {
 		tfFolderPath = new JTextField();
 		tfFolderPath.setBounds(10, 128, 239, 20);
 		tfFolderPath
-				.setText("E:\\Android Workplace\\Server-Client Architecture\\src");
+				.setText("E:\\Android Workplace\\Server-Client-Architecture\\src");
 		panel.add(tfFolderPath);
 		tfFolderPath.setColumns(10);
 
@@ -107,14 +167,69 @@ public class ClientFrame extends JFrame {
 				// FileInputStream fis = null;
 				try {
 
-					// System.out.println(bufStream.available());
-					transmitFolder(path);
+					OutputStream os = socket.getOutputStream();
+
+					DataOutputStream dos = new DataOutputStream(os);
+					dos.writeUTF("ConfigurationRequest");
+
+					DataInputStream dis = new DataInputStream(socket
+							.getInputStream());
+
+					while (dis.available() == 0) {
+					}
+
+					configurations = new Configurations();
+
+					int length = dis.readInt();
+					String[] extensions = new String[length];
+					for (int i = 0; i < length; i++) {
+						extensions[i] = dis.readUTF();
+					}
+					configurations.setExtensions(extensions);
+					configurations.setNumberOfFiles(dis.readInt());
+					configurations.setMaximumSize(dis.readLong());
+					configurations.setMinId(dis.readLong());
+					configurations.setMaxId(dis.readLong());
+					configurations.setFolderAllowed(dis.readBoolean());
+
+					System.out.println(configurations.toString());
+
+					File file = new File(path);
+
+					if (configurations.isValidSize(file.length())
+							&& configurations.isFolderAllowed()) {
+
+						dos.writeUTF("Valid");
+						// lblWarning.setText("Success");
+						transmitFolder(path);
+
+						JOptionPane.showMessageDialog(null,
+								"Successfully Transfered.");
+					} else {
+						String msg = "";
+						dos.writeUTF("Invalid");
+						if (configurations.isValidExtension(file.getName())) {
+							msg += "Invalid Extension!!!!";
+						}
+						if (configurations.isValidSize(file.length())) {
+							msg += "Very Large File!!!!";
+						}
+						if (configurations.isFolderAllowed()) {
+							msg += "Folder Not Allowed!!!!";
+						}
+						// lblWarning.setText(msg);
+
+						JOptionPane.showMessageDialog(null, msg);
+
+					}
+
+					System.out.println("end");
 
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-
+				System.out.println("end");
 			}
 		});
 		btnSendAFolder.setBounds(89, 159, 152, 23);
@@ -135,6 +250,7 @@ public class ClientFrame extends JFrame {
 		JButton btnBrowseFolder = new JButton("Browse");
 		btnBrowseFolder.setBounds(252, 127, 89, 23);
 		panel.add(btnBrowseFolder);
+
 		btnBrowseFolder.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (folderChooser.showOpenDialog(getFrames()[0]) == JFileChooser.APPROVE_OPTION) {
@@ -149,21 +265,54 @@ public class ClientFrame extends JFrame {
 	private void transmitFile(String path) throws Exception {
 		// TODO Auto-generated method stub
 
+		int read = 0, firstByte = 0;
 		File file = new File(path);
 		FileInputStream fis = new FileInputStream(file);
 		BufferedInputStream bufStream = new BufferedInputStream(fis);
 
 		OutputStream os = socket.getOutputStream();
-
 		DataOutputStream dos = new DataOutputStream(os);
+
+		DataInputStream dis = new DataInputStream(socket.getInputStream());
+
 		dos.writeUTF("File");
-		dos.writeUTF(file.getName());
-		dos.writeInt(bufStream.available());
-		byte[] bytes = new byte[bufStream.available()];
-		bufStream.read(bytes, 0, bytes.length);
-		//System.out.print(new String(bytes, 0, bytes.length));
-		dos.write(bytes, 0, bytes.length);
-		dos.flush();
+		System.out.println("File");
+		byte[] bytes = new byte[512];
+
+		while (true) {
+			read = bufStream.read(bytes);
+			dos.writeUTF(file.getName());
+			System.out.println(file.getName());
+			dos.writeInt(firstByte);
+			System.out.println(firstByte);
+			if (read == -1)
+				read = 0;
+			dos.writeInt(read);
+			System.out.println(read);
+			dos.write(bytes, 0, read);
+			// System.out.println(new String(bytes,0,read));
+
+			while (dis.available() == 0) {
+			}
+
+			if (dis.readUTF().equals("Acknowledgement")) {
+				System.out.println("Acknowledgement");
+				if (read < 512) {
+					System.out.println("loop broken");
+					break;
+				}
+				firstByte += read;
+			}
+
+		}
+		// dos.flush();
+
+		/*
+		 * dos.writeInt(bufStream.available()); byte[] bytes = new
+		 * byte[bufStream.available()]; bufStream.read(bytes, 0, bytes.length);
+		 * //System.out.print(new String(bytes, 0, bytes.length));
+		 * dos.write(bytes, 0, bytes.length); dos.flush();
+		 */
 
 		/*
 		 * byte[] bytes = new byte[1024]; int read; while ((read =
@@ -186,13 +335,22 @@ public class ClientFrame extends JFrame {
 			dos.writeUTF("Folder");
 			dos.writeUTF(fileOrDir.getName());
 			dos.writeInt(fileOrDir.list().length);
+			System.out.println("Folder");
+			System.out.println(fileOrDir.getName());
+			System.out.println(fileOrDir.list().length);
 			for (String s : fileOrDir.list()) {
-				System.out.println(absolutePath + s);
+				// System.out.println(absolutePath + s);
 				transmitFolder(absolutePath + File.separator + s);
 
 			}
 		} else {
-			transmitFile(path);
+			if (configurations.isValidExtension(fileOrDir.getName())
+					&& configurations.isValidSize(fileOrDir.length())) {
+				transmitFile(path);
+			} else
+				JOptionPane.showMessageDialog(null, "This File Named "
+						+ fileOrDir.getName()
+						+ " Is Not Allowed. Send Another File");
 		}
 	}
 

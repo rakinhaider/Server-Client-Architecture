@@ -7,6 +7,7 @@ import javax.swing.JLabel;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,12 +15,17 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.awt.Color;
+import java.awt.Font;
 
 public class ClientLoginFrame extends JFrame {
 	private JTextField textField;
 	private JTextField txtRakin;
 	private JPanel panel;
 	private JTextField tfPort;
+	private JLabel lblwarning;
+	
+	
 	public ClientLoginFrame() {
 		getContentPane().setLayout(null);
 		System.out.println("Want to connect to Server?");
@@ -52,7 +58,7 @@ public class ClientLoginFrame extends JFrame {
 		panel.add(lblYourName);
 		
 		txtRakin = new JTextField();
-		txtRakin.setText("1005009");
+		txtRakin.setText("201005009");
 		txtRakin.setColumns(10);
 		txtRakin.setBounds(139, 95, 169, 20);
 		panel.add(txtRakin);
@@ -75,11 +81,29 @@ public class ClientLoginFrame extends JFrame {
 					
 					byte[] bytes = name.getBytes();
 					os.write(bytes);
-					ClientFrame clientFrame=new ClientFrame(socket);
-					clientFrame.setSize(450,300);
-					clientFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-					clientFrame.setVisible(true);
-					dispose();
+					
+					
+					DataInputStream dis= new DataInputStream(is);
+					
+					while(dis.available()==0){}
+					
+					String response=dis.readUTF();
+					if(response.equals("ValidStudentId"))
+					{
+						ClientFrame clientFrame=new ClientFrame(socket);
+						clientFrame.setSize(450,300);
+						clientFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+						clientFrame.setVisible(true);
+						dispose();
+					}
+					else
+					{
+						lblwarning.setText("Invalid Student Id !!!!!");
+						socket.close();
+					}
+					
+					
+					
 					
 				} catch (UnknownHostException e) {
 					// TODO Auto-generated catch block
@@ -95,6 +119,12 @@ public class ClientLoginFrame extends JFrame {
 		});
 		btnConnect.setBounds(113, 152, 89, 23);
 		panel.add(btnConnect);
+		
+		lblwarning = new JLabel("");
+		lblwarning.setFont(new Font("Arial", Font.BOLD, 14));
+		lblwarning.setForeground(Color.RED);
+		lblwarning.setBounds(31, 11, 308, 14);
+		panel.add(lblwarning);
 		
 		
 	}

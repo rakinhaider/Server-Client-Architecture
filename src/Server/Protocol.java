@@ -6,7 +6,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Protocol {
 
-	private static String[] regx = { "(.*)\\.java" };
+	private static String[] regx = { "(.*)\\.java","(.*)\\.mkv" };
 	private static String[] regxNeg={"(.*)\\.exe"};
 	private static Pattern pattern;
 	private static Matcher matcher;
