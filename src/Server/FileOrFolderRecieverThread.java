@@ -98,13 +98,28 @@ public class FileOrFolderRecieverThread extends Thread {
 	private void recieveFile(String abstractPath) throws Exception {
 		// TODO Auto-generated method stub
 
+		DataOutputStream dos=new DataOutputStream(socket.getOutputStream());
+		
+		//check overwrite
 		String fileNameString = dis.readUTF();
+		if(fileExists(abstractPath, fileNameString))
+		{
+			dos.writeUTF("Exists");
+			while(dis.available()==0){}
+			String choice=dis.readUTF();
+			System.out.println("choice :"+choice);
+			if(!choice.equals("Overwrite"))return;
+		}else 
+			dos.writeUTF("DoesNotExists");
+		
+		while(dis.available()==0){}
+		fileNameString = dis.readUTF();
 		System.out.println(fileNameString);
 		FileOutputStream fos = new FileOutputStream(abstractPath
 				+ File.separator + fileNameString);
 		BufferedOutputStream bufoutStream = new BufferedOutputStream(fos);
 
-		DataOutputStream dos=new DataOutputStream(socket.getOutputStream());
+		
 		
 		while (bufStream.available() == 0) {
 		}
@@ -172,7 +187,7 @@ public class FileOrFolderRecieverThread extends Thread {
 		// TODO Auto-generated method stub
 		while (bufStream.available() == 0) {
 		}
-
+		
 		String choice = dis.readUTF();
 		System.out.println(choice);
 
@@ -198,5 +213,11 @@ public class FileOrFolderRecieverThread extends Thread {
 		}
 
 	}
-
+	
+	public boolean fileExists(String abstractpath,String fileName)
+	{
+		File directory= new File(abstractpath+File.separator+fileName);
+		return directory.exists();
+	}
+	
 }

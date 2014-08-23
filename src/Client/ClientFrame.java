@@ -192,7 +192,7 @@ public class ClientFrame extends JFrame {
 					configurations.setMaxId(dis.readLong());
 					configurations.setFolderAllowed(dis.readBoolean());
 
-					System.out.println(configurations.toString());
+					// System.out.println(configurations.toString());
 
 					File file = new File(path);
 
@@ -276,6 +276,24 @@ public class ClientFrame extends JFrame {
 		DataInputStream dis = new DataInputStream(socket.getInputStream());
 
 		dos.writeUTF("File");
+
+		// checking over-writing
+		dos.writeUTF(file.getName());
+		while (dis.available() == 0) {
+		}
+		if (dis.readUTF().equals("Exists")) {
+			if (JOptionPane
+					.showOptionDialog(
+							null,
+							"The file you want to transfer already exists in the server directory.\nDo you want to overwrite?",
+							"Over Write ?", JOptionPane.YES_NO_OPTION,
+							JOptionPane.QUESTION_MESSAGE, null, null, null)!=JOptionPane.YES_OPTION)
+			{
+				dos.writeUTF("DoNotOverWrite");
+				return;
+			}else dos.writeUTF("Overwrite");
+		}
+
 		System.out.println("File");
 		byte[] bytes = new byte[512];
 

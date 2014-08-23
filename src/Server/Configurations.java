@@ -1,6 +1,7 @@
 package Server;
 
 
+import java.net.InetAddress;
 import java.util.Arrays;
 
 public class Configurations {
@@ -96,6 +97,34 @@ public class Configurations {
 	{
 		if(studentId>=minId && studentId<=maxId)return true;
 		return false;
+	}
+	
+	public boolean isValidIpAddress(Long studentId,InetAddress ipAddress)
+	{
+		InetAddress requiredIpAddress= (InetAddress)ServerRunningFrame.ipIdMap.get(studentId);
+		if(requiredIpAddress==null)
+		{
+			return false;
+		}
+		else if(requiredIpAddress.equals(ipAddress))
+		{
+			return true;
+		}
+		
+		return false;
+		
+	}
+	
+	public void insertNewIdIpMap(Long studentId,InetAddress inetAddress)
+	{
+		if(ServerRunningFrame.ipIdMap.containsValue(inetAddress))
+		{
+			return;
+		}
+		else
+		{
+			ServerRunningFrame.ipIdMap.put(studentId, inetAddress);
+		}
 	}
 	
 }
