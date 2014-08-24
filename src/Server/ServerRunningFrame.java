@@ -22,6 +22,7 @@ public class ServerRunningFrame extends JFrame implements Runnable {
 	public static ServerSocket serverSocket;
 	private static Long studentId;
 	public static HashMap<Long, InetAddress> ipIdMap;
+	public static HashMap<Long, Integer> idNumOfFilesMap;
 	private static JTextArea textArea;
 	private Configurations configurations;
 	Thread thread;
@@ -60,7 +61,7 @@ public class ServerRunningFrame extends JFrame implements Runnable {
 		// TODO Auto-generated method stub
 
 		ipIdMap = new HashMap<Long, InetAddress>();
-
+		idNumOfFilesMap= new HashMap<Long, Integer>();
 		Random random = new Random();
 		int port = random.nextInt(64000);
 

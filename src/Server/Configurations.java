@@ -124,7 +124,13 @@ public class Configurations {
 		else
 		{
 			ServerRunningFrame.ipIdMap.put(studentId, inetAddress);
+			ServerRunningFrame.idNumOfFilesMap.put(studentId,0);
 		}
 	}
 	
+	public boolean isValidFileCount(int count)
+	{
+		return count<numberOfFiles;
+	}
+
 }

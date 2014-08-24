@@ -15,6 +15,7 @@ import java.awt.Panel;
 import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
 
+import Server.Checksum;
 import Server.Configurations;
 
 import java.awt.event.ActionListener;
@@ -78,64 +79,73 @@ public class ClientFrame extends JFrame {
 		btnSendAFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
-				String path = tfFilePath.getText();
+				String[] paths = tfFilePath.getText().split(";");
 
-				// FileInputStream fis = null;
 				try {
 
-					// System.out.println(bufStream.available());
+					for (String path : paths) {
+						OutputStream os = socket.getOutputStream();
 
-					OutputStream os = socket.getOutputStream();
+						DataOutputStream dos = new DataOutputStream(os);
+						dos.writeUTF("ConfigurationRequest");
 
-					DataOutputStream dos = new DataOutputStream(os);
-					dos.writeUTF("ConfigurationRequest");
+						DataInputStream dis = new DataInputStream(socket
+								.getInputStream());
 
-					DataInputStream dis = new DataInputStream(socket
-							.getInputStream());
-
-					while (dis.available() == 0) {
-					}
-
-					configurations = new Configurations();
-
-					int length = dis.readInt();
-					String[] extensions = new String[length];
-					for (int i = 0; i < length; i++) {
-						extensions[i] = dis.readUTF();
-					}
-					configurations.setExtensions(extensions);
-					configurations.setNumberOfFiles(dis.readInt());
-					configurations.setMaximumSize(dis.readLong());
-					configurations.setMinId(dis.readLong());
-					configurations.setMaxId(dis.readLong());
-					configurations.setFolderAllowed(dis.readBoolean());
-
-					System.out.println(configurations.toString());
-
-					File file = new File(path);
-
-					if (configurations.isValidExtension(file.getName())
-							&& configurations.isValidSize(file.length())) {
-						dos.writeUTF("Valid");
-
-						transmitFile(path);
-
-						JOptionPane.showMessageDialog(null,
-								"Successfully Transfered.");
-					} else {
-						dos.writeUTF("Invalid");
-						String msg = "";
-						if (configurations.isValidExtension(file.getName())) {
-							msg.concat("Invalid Extension!!!!");
-						}
-						if (configurations.isValidSize(file.length())) {
-							msg.concat("Very Large File!!!!");
+						while (dis.available() == 0) {
 						}
 
-						JOptionPane.showMessageDialog(null, msg);
+						configurations = new Configurations();
+
+						int length = dis.readInt();
+						String[] extensions = new String[length];
+						for (int i = 0; i < length; i++) {
+							extensions[i] = dis.readUTF();
+						}
+						configurations.setExtensions(extensions);
+						configurations.setNumberOfFiles(dis.readInt());
+						configurations.setMaximumSize(dis.readLong());
+						configurations.setMinId(dis.readLong());
+						configurations.setMaxId(dis.readLong());
+						configurations.setFolderAllowed(dis.readBoolean());
+
+						File file = new File(path);
+						
+						if (configurations.isValidExtension(file.getName())
+								&& configurations.isValidSize(file.length())) {
+							
+							dos.writeUTF("FileCount");
+							int count=dis.readInt();
+							if(configurations.isValidFileCount(count))
+							{
+								dos.writeUTF("Valid");
+
+								transmitFile(path);
+
+								JOptionPane.showMessageDialog(null,
+										"Successfully Transfered.");
+							}
+							else{
+								dos.writeUTF("Invalid");
+								String msg="More Than Allowed Number Of Files!!!!";
+								JOptionPane.showMessageDialog(null, msg);
+							}
+						} else {
+							dos.writeUTF("Invalid");
+							String msg = "";
+							if (!configurations.isValidExtension(file.getName())) {
+								msg+="Invalid Extension!!!!";
+							}
+							if (!configurations.isValidSize(file.length())) {
+								msg+="Very Large File!!!!";
+							}
+
+							JOptionPane.showMessageDialog(null, msg);
+
+						}
+
 
 					}
-
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -163,6 +173,7 @@ public class ClientFrame extends JFrame {
 			public void actionPerformed(ActionEvent arg0) {
 
 				String path = tfFolderPath.getText();
+				
 
 				// FileInputStream fis = null;
 				try {
@@ -239,10 +250,11 @@ public class ClientFrame extends JFrame {
 		btnBrowseFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (fileChooser.showOpenDialog(getFrames()[0]) == JFileChooser.APPROVE_OPTION) {
-					tfFilePath.setText(fileChooser.getSelectedFile()
-							.getAbsolutePath());
+					tfFilePath.setText(getAllFileName(fileChooser.getSelectedFiles()));
 				}
 			}
+
+			
 		});
 		btnBrowseFile.setBounds(252, 40, 89, 23);
 		panel.add(btnBrowseFile);
@@ -264,7 +276,7 @@ public class ClientFrame extends JFrame {
 
 	private void transmitFile(String path) throws Exception {
 		// TODO Auto-generated method stub
-
+		
 		int read = 0, firstByte = 0;
 		File file = new File(path);
 		FileInputStream fis = new FileInputStream(file);
@@ -323,24 +335,12 @@ public class ClientFrame extends JFrame {
 			}
 
 		}
-		// dos.flush();
-
-		/*
-		 * dos.writeInt(bufStream.available()); byte[] bytes = new
-		 * byte[bufStream.available()]; bufStream.read(bytes, 0, bytes.length);
-		 * //System.out.print(new String(bytes, 0, bytes.length));
-		 * dos.write(bytes, 0, bytes.length); dos.flush();
-		 */
-
-		/*
-		 * byte[] bytes = new byte[1024]; int read; while ((read =
-		 * bufStream.read(bytes)) != -1) { //
-		 * http://stackoverflow.com/questions/
-		 * 6101916/simple-java-file-transfer-program-problem os.write(bytes, 0,
-		 * read);
-		 * 
-		 * }
-		 */
+		
+		dos.writeUTF("CheckSum");
+		dos.writeUTF(Checksum.md5(bufStream));
+		
+		bufStream.close();
+		
 	}
 
 	private void transmitFolder(String path) throws Exception {
@@ -372,4 +372,19 @@ public class ClientFrame extends JFrame {
 		}
 	}
 
+	private String getAllFileName(File[] selectedFiles) {
+		// TODO Auto-generated method stub
+		String allNames="";
+		int count=0;
+		
+		
+		for (File f : selectedFiles) {
+			allNames+=f.getAbsolutePath();
+			if(count!=selectedFiles.length)allNames+=";";
+			count++;
+		}
+		
+		return allNames;
+	}
+	
 }
